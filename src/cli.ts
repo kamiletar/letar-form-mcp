@@ -8,20 +8,20 @@ import { createFormMcpServer } from './index.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-// Порядок поиска docs/:
-// 1. FORM_MCP_DOCS_PATH env — явно указанный путь
-// 2. ./docs/ — bundled в npm пакете (dist/docs/)
-// 3. ../../form-components/docs — локально в монорепо
+// docs/ lookup order:
+// 1. FORM_MCP_DOCS_PATH env — explicitly specified path
+// 2. ./docs/ — bundled in the npm package (dist/docs/)
+// 3. ../../form-components/docs — local monorepo fallback
 function resolveDocsPath(): string {
   if (process.env.FORM_MCP_DOCS_PATH) {
     return process.env.FORM_MCP_DOCS_PATH
   }
-  // npm пакет: docs/ лежит рядом с cli.js
+  // npm package: docs/ is next to cli.js
   const bundledDocs = resolve(join(__dirname, 'docs'))
   if (existsSync(bundledDocs)) {
     return bundledDocs
   }
-  // Монорепо: docs/ в form-components
+  // Monorepo: docs/ in form-components
   return resolve(join(__dirname, '..', '..', 'form-components', 'docs'))
 }
 

@@ -2,6 +2,8 @@
 
 MCP (Model Context Protocol) server for [@letar/forms](https://www.npmjs.com/package/@letar/forms) — gives AI assistants full context about 40+ declarative form field components, form patterns, and ZenStack code generation directives.
 
+[Документация на русском](./README.ru.md)
+
 ## Quick Start
 
 ### Claude Code

@@ -1,23 +1,23 @@
 import type { DocSection } from './loader.js'
 
-/** Категории полей */
+/** Field categories */
 export type FieldCategory = 'text' | 'number' | 'date' | 'select' | 'multi-select' | 'special'
 
-/** Описание поля в реестре */
+/** Field description in the registry */
 export interface FieldInfo {
-  /** Имя компонента, например "String" */
+  /** Component name, e.g. "String" */
   name: string
-  /** Полное имя, например "Form.Field.String" */
+  /** Full name, e.g. "Form.Field.String" */
   fullName: string
-  /** Описание */
+  /** Description */
   description: string
-  /** Категория */
+  /** Category */
   category: FieldCategory
-  /** Детальная документация (из секции H2 ниже таблицы) */
+  /** Detailed documentation (from H2 section below the table) */
   details?: string
 }
 
-/** Маппинг заголовков секций → категории */
+/** Mapping of section headings -> categories */
 const CATEGORY_MAP: Record<string, FieldCategory> = {
   'Текстовые поля': 'text',
   'Числовые поля': 'number',
@@ -27,7 +27,7 @@ const CATEGORY_MAP: Record<string, FieldCategory> = {
   Специализированные: 'special',
 }
 
-/** Парсит строку таблицы markdown: | `Component` | Description | */
+/** Parses a markdown table row: | `Component` | Description | */
 function parseTableRow(line: string): { component: string; description: string } | null {
   const match = line.match(/^\|\s*`([^`]+)`\s*\|\s*(.+?)\s*\|/)
   if (!match) {
@@ -36,19 +36,19 @@ function parseTableRow(line: string): { component: string; description: string }
   return { component: match[1], description: match[2] }
 }
 
-/** Извлекает короткое имя из полного: "Form.Field.String" → "String" */
+/** Extracts the short name from the full name: "Form.Field.String" -> "String" */
 function shortName(fullName: string): string {
   const parts = fullName.split('.')
   return parts.at(-1) ?? fullName
 }
 
-/** Строит реестр полей из секций fields.md */
+/** Builds the field registry from fields.md sections */
 export function buildFieldRegistry(fieldSections: DocSection[]): Map<string, FieldInfo> {
   const registry = new Map<string, FieldInfo>()
-  /** Секции с детальной документацией (H2 с именем компонента) */
+  /** Sections with detailed documentation (H2 with component name) */
   const detailSections = new Map<string, string>()
 
-  // Первый проход: собираем детальные секции (например "Form.Field.RichText — WYSIWYG редактор")
+  // First pass: collect detail sections (e.g. "Form.Field.RichText — WYSIWYG editor")
   for (const section of fieldSections) {
     if (section.level === 2 && section.heading.includes('Form.Field.')) {
       const fieldMatch = section.heading.match(/Form\.Field\.(\w+)/)
@@ -58,7 +58,7 @@ export function buildFieldRegistry(fieldSections: DocSection[]): Map<string, Fie
     }
   }
 
-  // Второй проход: парсим таблицы из категорий
+  // Second pass: parse tables from categories
   for (const section of fieldSections) {
     const category = CATEGORY_MAP[section.heading]
     if (!category) {
@@ -87,7 +87,7 @@ export function buildFieldRegistry(fieldSections: DocSection[]): Map<string, Fie
   return registry
 }
 
-/** Возвращает все поля, опционально фильтруя по категории */
+/** Returns all fields, optionally filtering by category */
 export function getFields(registry: Map<string, FieldInfo>, category?: FieldCategory): FieldInfo[] {
   const all = Array.from(registry.values())
   if (!category) {

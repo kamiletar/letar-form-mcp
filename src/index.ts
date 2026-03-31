@@ -7,19 +7,19 @@ import { loadDocs, type LoadedDocs } from './data/loader.js'
 import { buildPatternRegistry, getPatterns } from './data/pattern-registry.js'
 
 export interface FormMcpServerOptions {
-  /** Путь к директории docs/ с markdown-файлами */
+  /** Path to the docs/ directory with markdown files */
   docsPath: string
-  /** Имя сервера */
+  /** Server name */
   name?: string
-  /** Версия сервера */
+  /** Server version */
   version?: string
 }
 
-/** Создаёт MCP сервер для форм-экосистемы */
+/** Creates an MCP server for the forms ecosystem */
 export function createFormMcpServer(options: FormMcpServerOptions): McpServer {
   const { docsPath, name = '@letar/form-mcp', version = '0.1.0' } = options
 
-  // Загрузка данных при создании сервера
+  // Load data when the server is created
   const docs: LoadedDocs = loadDocs(docsPath)
   const fieldRegistry = buildFieldRegistry(docs.sections.fields)
   const directiveRegistry = buildDirectiveRegistry(docs.sections.zenstack)
@@ -31,8 +31,8 @@ export function createFormMcpServer(options: FormMcpServerOptions): McpServer {
 
   server.tool(
     'list_fields',
-    'Список всех типов полей @lena/form-components. Фильтр по категории: text, number, date, select, multi-select, special.',
-    { category: z.string().optional().describe('Категория: text, number, date, select, multi-select, special') },
+    'List all field types in @letar/forms. Filter by category: text, number, date, select, multi-select, special.',
+    { category: z.string().optional().describe('Category: text, number, date, select, multi-select, special') },
     async ({ category }) => {
       const fields = getFields(fieldRegistry, category as FieldCategory | undefined)
       return {
@@ -57,13 +57,13 @@ export function createFormMcpServer(options: FormMcpServerOptions): McpServer {
 
   server.tool(
     'get_field_props',
-    'Получить пропсы, описание и документацию конкретного поля формы.',
-    { fieldType: z.string().describe('Тип поля, например: String, Date, Select, Combobox') },
+    'Get props, description, and documentation for a specific form field.',
+    { fieldType: z.string().describe('Field type, e.g.: String, Date, Select, Combobox') },
     async ({ fieldType }) => {
       const field = fieldRegistry.get(fieldType.toLowerCase())
       if (!field) {
         return {
-          content: [{ type: 'text', text: `Поле "${fieldType}" не найдено. Используйте list_fields для списка.` }],
+          content: [{ type: 'text', text: `Field "${fieldType}" not found. Use list_fields to see available fields.` }],
           isError: true,
         }
       }
@@ -82,20 +82,20 @@ export function createFormMcpServer(options: FormMcpServerOptions): McpServer {
 
   server.tool(
     'get_field_example',
-    'Получить код-пример использования конкретного поля формы.',
+    'Get a code example for a specific form field.',
     {
-      fieldType: z.string().describe('Тип поля: String, Date, Select, и т.д.'),
-      variant: z.string().optional().describe('Вариант: basic, with-validation, in-form'),
+      fieldType: z.string().describe('Field type: String, Date, Select, etc.'),
+      variant: z.string().optional().describe('Variant: basic, with-validation, in-form'),
     },
     async ({ fieldType }) => {
       const field = fieldRegistry.get(fieldType.toLowerCase())
       if (!field) {
         return {
-          content: [{ type: 'text', text: `Поле "${fieldType}" не найдено.` }],
+          content: [{ type: 'text', text: `Field "${fieldType}" not found.` }],
           isError: true,
         }
       }
-      // Генерируем пример на основе типа поля
+      // Generate an example based on the field type
       const example = generateFieldExample(field)
       return { content: [{ type: 'text', text: example }] }
     },
@@ -103,12 +103,12 @@ export function createFormMcpServer(options: FormMcpServerOptions): McpServer {
 
   server.tool(
     'get_form_pattern',
-    'Получить полный пример формы для типового сценария: crud-create, crud-edit, multi-step, offline, i18n, from-schema, declarative, server-action.',
+    'Get a complete form example for a common scenario: crud-create, crud-edit, multi-step, offline, i18n, from-schema, declarative, server-action.',
     {
       pattern: z
         .string()
         .describe(
-          'Имя паттерна: crud-create, crud-edit, multi-step, offline, i18n, from-schema, declarative, server-action',
+          'Pattern name: crud-create, crud-edit, multi-step, offline, i18n, from-schema, declarative, server-action',
         ),
     },
     async ({ pattern }) => {
@@ -119,7 +119,7 @@ export function createFormMcpServer(options: FormMcpServerOptions): McpServer {
           content: [
             {
               type: 'text',
-              text: `Паттерн "${pattern}" не найден. Доступные: ${all.map((p) => p.name).join(', ')}`,
+              text: `Pattern "${pattern}" not found. Available: ${all.map((p) => p.name).join(', ')}`,
             },
           ],
           isError: true,
@@ -134,8 +134,8 @@ export function createFormMcpServer(options: FormMcpServerOptions): McpServer {
 
   server.tool(
     'get_directives',
-    'Получить описание @form.* директив zenstack-form-plugin. Без аргументов — все директивы.',
-    { directive: z.string().optional().describe('Имя директивы: @form.title, @form.props, и т.д.') },
+    'Get descriptions of @form.* directives for zenstack-form-plugin. Without arguments returns all directives.',
+    { directive: z.string().optional().describe('Directive name: @form.title, @form.props, etc.') },
     async ({ directive }) => {
       const directives = getDirectives(directiveRegistry, directive)
       return {
@@ -146,21 +146,21 @@ export function createFormMcpServer(options: FormMcpServerOptions): McpServer {
 
   server.tool(
     'generate_form',
-    'Сгенерировать код формы по спецификации полей.',
+    'Generate form code from a field specification.',
     {
       fields: z
         .array(
           z.object({
-            name: z.string().describe('Имя поля'),
-            type: z.string().describe('Тип поля: String, Number, Date, Select, и т.д.'),
-            label: z.string().describe('Метка поля'),
-            required: z.boolean().optional().describe('Обязательное поле'),
-            validation: z.string().optional().describe('Дополнительная валидация Zod'),
+            name: z.string().describe('Field name'),
+            type: z.string().describe('Field type: String, Number, Date, Select, etc.'),
+            label: z.string().describe('Field label'),
+            required: z.boolean().optional().describe('Required field'),
+            validation: z.string().optional().describe('Additional Zod validation'),
           }),
         )
-        .describe('Массив спецификаций полей'),
-      formName: z.string().optional().describe('Имя компонента формы'),
-      withSchema: z.boolean().optional().describe('Генерировать Zod-схему'),
+        .describe('Array of field specifications'),
+      formName: z.string().optional().describe('Form component name'),
+      withSchema: z.boolean().optional().describe('Generate Zod schema'),
     },
     async ({ fields, formName = 'MyForm', withSchema = true }) => {
       const code = generateFormCode(fields, formName, withSchema)
@@ -170,19 +170,23 @@ export function createFormMcpServer(options: FormMcpServerOptions): McpServer {
 
   // ─── RESOURCES ───────────────────────────────────────────
 
-  // Статические ресурсы для каждого документа
+  // Static resources for each document
   const docEntries: Array<{ key: string; name: string; description: string }> = [
-    { key: 'fields', name: 'Field компоненты', description: 'Полный справочник 40+ типов полей' },
+    { key: 'fields', name: 'Field Components', description: 'Complete reference for 40+ field types' },
     {
       key: 'form-level',
-      name: 'Form-level компоненты',
-      description: 'Steps, When, Errors, DirtyGuard, DebugValues и другие',
+      name: 'Form-level Components',
+      description: 'Steps, When, Errors, DirtyGuard, DebugValues and more',
     },
-    { key: 'schema-generation', name: 'Генерация из схемы', description: 'FromSchema, AutoFields, Builder, Auto поля' },
-    { key: 'offline', name: 'Offline поддержка', description: 'useOfflineForm, sync queue, индикаторы статуса' },
-    { key: 'i18n', name: 'Мультиязычность', description: 'FormI18nProvider, локализация ошибок и опций' },
-    { key: 'zenstack', name: 'ZenStack интеграция', description: '@form.* директивы, генерация из schema.zmodel' },
-    { key: 'api-reference', name: 'API Reference', description: 'Hooks, contexts, типы, утилиты' },
+    {
+      key: 'schema-generation',
+      name: 'Schema Generation',
+      description: 'FromSchema, AutoFields, Builder, Auto fields',
+    },
+    { key: 'offline', name: 'Offline Support', description: 'useOfflineForm, sync queue, status indicators' },
+    { key: 'i18n', name: 'Internationalization', description: 'FormI18nProvider, error and option localization' },
+    { key: 'zenstack', name: 'ZenStack Integration', description: '@form.* directives, generation from schema.zmodel' },
+    { key: 'api-reference', name: 'API Reference', description: 'Hooks, contexts, types, utilities' },
   ]
 
   for (const entry of docEntries) {
@@ -195,7 +199,7 @@ export function createFormMcpServer(options: FormMcpServerOptions): McpServer {
           {
             uri: `form-docs://${entry.key}`,
             mimeType: 'text/markdown',
-            text: docs.raw[entry.key as keyof typeof docs.raw] || `# ${entry.name}\n\nДокументация недоступна.`,
+            text: docs.raw[entry.key as keyof typeof docs.raw] || `# ${entry.name}\n\nDocumentation not available.`,
           },
         ],
       }),
@@ -206,12 +210,12 @@ export function createFormMcpServer(options: FormMcpServerOptions): McpServer {
 
   server.prompt(
     'create-form',
-    'Создать CRUD форму для модели данных',
+    'Create a CRUD form for a data model',
     {
-      modelName: z.string().describe('Название модели (например: User, Product, Recipe)'),
-      fields: z.string().describe('Список полей через запятую: name:String, email:String, age:Number'),
-      withOffline: z.boolean().optional().describe('Добавить оффлайн-поддержку'),
-      withI18n: z.boolean().optional().describe('Добавить i18n'),
+      modelName: z.string().describe('Model name (e.g.: User, Product, Recipe)'),
+      fields: z.string().describe('Comma-separated field list: name:String, email:String, age:Number'),
+      withOffline: z.boolean().optional().describe('Add offline support'),
+      withI18n: z.boolean().optional().describe('Add i18n support'),
     },
     async ({ modelName, fields, withOffline, withI18n }) => ({
       messages: [
@@ -228,11 +232,11 @@ export function createFormMcpServer(options: FormMcpServerOptions): McpServer {
 
   server.prompt(
     'add-field',
-    'Добавить поле к существующей форме',
+    'Add a field to an existing form',
     {
-      fieldType: z.string().describe('Тип поля: String, Date, Select, Combobox, и т.д.'),
-      fieldName: z.string().describe('Имя поля в форме'),
-      validation: z.string().optional().describe('Валидация: required, email, min:3, max:100'),
+      fieldType: z.string().describe('Field type: String, Date, Select, Combobox, etc.'),
+      fieldName: z.string().describe('Field name in the form'),
+      validation: z.string().optional().describe('Validation: required, email, min:3, max:100'),
     },
     async ({ fieldType, fieldName, validation }) => ({
       messages: [
@@ -249,9 +253,9 @@ export function createFormMcpServer(options: FormMcpServerOptions): McpServer {
 
   server.prompt(
     'migrate-form',
-    'Мигрировать форму с другого фреймворка на @lena/form-components',
+    'Migrate a form from another framework to @letar/forms',
     {
-      sourceFramework: z.string().describe('Исходный фреймворк: react-hook-form, formik, conform'),
+      sourceFramework: z.string().describe('Source framework: react-hook-form, formik, conform'),
     },
     async ({ sourceFramework }) => ({
       messages: [
@@ -269,24 +273,24 @@ export function createFormMcpServer(options: FormMcpServerOptions): McpServer {
   return server
 }
 
-// ─── ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ─────────────────────────────
+// ─── HELPER FUNCTIONS ────────────────────────────────────
 
 function generateFieldExample(field: FieldInfo): string {
   const lines = [
-    `// Пример использования ${field.fullName}`,
+    `// Usage example for ${field.fullName}`,
     '',
-    `// В декларативном API:`,
-    `<${field.fullName} name="myField" label="Моё поле" />`,
+    `// Declarative API:`,
+    `<${field.fullName} name="myField" label="My Field" />`,
     '',
-    `// В форме:`,
+    `// In a form:`,
     `<Form form={form}>`,
-    `  <${field.fullName} name="myField" label="Моё поле"${field.category === 'select' ? ' options={options}' : ''} />`,
-    `  <Form.Button.Submit>Отправить</Form.Button.Submit>`,
+    `  <${field.fullName} name="myField" label="My Field"${field.category === 'select' ? ' options={options}' : ''} />`,
+    `  <Form.Button.Submit>Submit</Form.Button.Submit>`,
     `</Form>`,
   ]
 
   if (field.details) {
-    lines.push('', '// Детали:', '/*', field.details.slice(0, 500), '*/')
+    lines.push('', '// Details:', '/*', field.details.slice(0, 500), '*/')
   }
 
   return lines.join('\n')
@@ -302,7 +306,7 @@ function generateFormCode(
   if (withSchema) {
     lines.push(`import { z } from 'zod/v4'`)
   }
-  lines.push(`import { useAppForm } from '@lena/form-components'`)
+  lines.push(`import { useAppForm } from '@letar/forms'`)
   lines.push('')
 
   if (withSchema) {
@@ -328,7 +332,7 @@ function generateFormCode(
   }
   lines.push(`    },`)
   lines.push(`    onSubmit: async ({ value }) => {`)
-  lines.push(`      // TODO: вызов Server Action`)
+  lines.push(`      // TODO: call Server Action`)
   lines.push(`      console.log(value)`)
   lines.push(`    },`)
   lines.push(`  })`)
@@ -339,7 +343,7 @@ function generateFormCode(
     const required = field.required ? ' required' : ''
     lines.push(`      <Form.Field.${field.type} name="${field.name}" label="${field.label}"${required} />`)
   }
-  lines.push(`      <Form.Button.Submit>Сохранить</Form.Button.Submit>`)
+  lines.push(`      <Form.Button.Submit>Save</Form.Button.Submit>`)
   lines.push(`    </Form>`)
   lines.push(`  )`)
   lines.push(`}`)
@@ -361,7 +365,7 @@ function mapFieldTypeToZod(type: string, required?: boolean, validation?: string
   }
   let zodType = base[type] ?? 'z.string()'
   if (required) {
-    zodType += `.min(1, 'Обязательное поле')`
+    zodType += `.min(1, 'Required field')`
   }
   if (validation) {
     zodType += `.${validation}`
@@ -382,36 +386,36 @@ function getDefaultValue(type: string): string {
 
 function buildCreateFormPrompt(modelName: string, fields: string, withOffline: boolean, withI18n: boolean): string {
   const parts = [
-    `Создай CRUD форму для модели "${modelName}" с использованием @lena/form-components.`,
+    `Create a CRUD form for the "${modelName}" model using @letar/forms.`,
     '',
-    `Поля: ${fields}`,
+    `Fields: ${fields}`,
     '',
-    'Требования:',
-    '- Используй useAppForm из @lena/form-components',
-    '- Создай Zod v4 схему с .strip()',
-    '- Используй декларативный API (Form.Field.*)',
-    '- Создай Server Action для сохранения',
-    '- Файл схемы: _schemas/{modelName}.schema.ts',
+    'Requirements:',
+    '- Use useAppForm from @letar/forms',
+    '- Create a Zod v4 schema with .strip()',
+    '- Use the declarative API (Form.Field.*)',
+    '- Create a Server Action for saving',
+    '- Schema file: _schemas/{modelName}.schema.ts',
   ]
   if (withOffline) {
-    parts.push('- Добавь оффлайн-поддержку через useOfflineForm')
+    parts.push('- Add offline support via useOfflineForm')
   }
   if (withI18n) {
-    parts.push('- Добавь i18n через FormI18nProvider')
+    parts.push('- Add i18n via FormI18nProvider')
   }
   return parts.join('\n')
 }
 
 function buildAddFieldPrompt(fieldType: string, fieldName: string, validation?: string): string {
   return [
-    `Добавь поле "${fieldName}" типа Form.Field.${fieldType} к существующей форме.`,
+    `Add a "${fieldName}" field of type Form.Field.${fieldType} to an existing form.`,
     '',
-    'Требования:',
-    '- Добавь поле в Zod-схему',
-    '- Добавь defaultValue в useAppForm',
-    `- Используй <Form.Field.${fieldType} name="${fieldName}" />`,
-    validation ? `- Валидация: ${validation}` : '',
-    '- Не забудь обновить тип формы',
+    'Requirements:',
+    '- Add the field to the Zod schema',
+    '- Add a defaultValue in useAppForm',
+    `- Use <Form.Field.${fieldType} name="${fieldName}" />`,
+    validation ? `- Validation: ${validation}` : '',
+    '- Remember to update the form type',
   ]
     .filter(Boolean)
     .join('\n')
@@ -419,19 +423,19 @@ function buildAddFieldPrompt(fieldType: string, fieldName: string, validation?: 
 
 function buildMigratePrompt(sourceFramework: string): string {
   return [
-    `Мигрируй форму с ${sourceFramework} на @lena/form-components.`,
+    `Migrate a form from ${sourceFramework} to @letar/forms.`,
     '',
-    'Ключевые изменения:',
-    '- Замени useForm → useAppForm из @lena/form-components',
-    '- Замени Controller/Field → Form.Field.* (декларативный API)',
-    '- Замени yup/joi → Zod v4 с .strip()',
-    '- Замени handleSubmit → onSubmit в useAppForm',
-    '- Замени FormProvider → <Form form={form}>',
-    '- Используй FormGroup для группировки полей',
-    '- Используй Form.When для условных полей',
+    'Key changes:',
+    '- Replace useForm -> useAppForm from @letar/forms',
+    '- Replace Controller/Field -> Form.Field.* (declarative API)',
+    '- Replace yup/joi -> Zod v4 with .strip()',
+    '- Replace handleSubmit -> onSubmit in useAppForm',
+    '- Replace FormProvider -> <Form form={form}>',
+    '- Use FormGroup for field grouping',
+    '- Use Form.When for conditional fields',
     '',
-    'Импорты:',
-    "import { useAppForm } from '@lena/form-components'",
+    'Imports:',
+    "import { useAppForm } from '@letar/forms'",
     "import { z } from 'zod/v4'",
   ].join('\n')
 }
